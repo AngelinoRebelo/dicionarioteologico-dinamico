@@ -24,15 +24,15 @@ exports.handler = async function(event) {
       throw new Error("A chave da API do Gemini não está configurada no servidor.");
     }
 
-    // O mesmo prompt detalhado que usávamos antes.
+    // Prompt atualizado para incluir o significado puro do grego e do latim.
     const prompt = `Para o termo teológico "${termo}", forneça as seguintes informações em formato JSON, seguindo o esquema especificado.
     1.  **portugues**: Uma definição clara e abrangente do termo no contexto teológico cristão.
-    2.  **hebraico**: Um objeto contendo o 'termo' original, seu 'significado', a representação 'silabico' transliterada (ex: 'che-sed'), e o número da Concordância de 'strong' (ex: 'H2617'). Se não houver equivalente, retorne null.
-    3.  **grego**: Um objeto contendo o 'termo' original, seu 'significado', e o número da Concordância de 'strong' (ex: 'G5485'). Se não houver equivalente, retorne null.
-    4.  **latim**: Um objeto contendo o 'termo' da Vulgata Latina (ex: 'gratia') e seu 'significado'. Se não houver equivalente, retorne null.
-    5.  **comentarios**: Um array de pelo menos 4 objetos, cada um com 'autor' e 'texto'. Para cada comentário, forneça uma análise aprofundada e substancial em um parágrafo completo. Priorize teólogos cristãos de referência (William Barclay, Matthew Henry, João Calvino, etc.). Sempre que o termo tiver uma raiz hebraica relevante, inclua também comentários do Rabino Rashi (para a perspectiva judaica clássica) e de fontes ou rabinos messiânicos (para a perspectiva judaica messiânica). O objetivo é oferecer uma visão rica e multifacetada.`;
+    2.  **hebraico**: Um objeto contendo o 'termo' original, o 'significado' (conforme a definição de Strong), a representação 'silabico' transliterada, o número de 'strong', e o 'significado_puro' (uma explicação do sentido literal ou da raiz da palavra em hebraico). Se não houver equivalente, retorne null.
+    3.  **grego**: Um objeto contendo o 'termo' original, seu 'significado' (conforme Strong), o número de 'strong', e o 'significado_puro' (explicação do sentido da raiz grega). Se não houver equivalente, retorne null.
+    4.  **latim**: Um objeto contendo o 'termo' da Vulgata Latina, seu 'significado', e o 'significado_puro' (explicação do sentido da raiz latina). Se não houver equivalente, retorne null.
+    5.  **comentarios**: Um array de pelo menos 4 objetos, cada um com 'autor' e 'texto'. Para cada comentário, forneça uma análise aprofundada. Priorize teólogos cristãos de referência (William Barclay, Matthew Henry, João Calvino, etc.). Sempre que o termo tiver uma raiz hebraica relevante, inclua também comentários do Rabino Rashi (perspectiva judaica clássica) e de fontes ou rabinos messiânicos (perspectiva judaica messiânica).`;
 
-    // A mesma estrutura de payload que usávamos antes.
+    // Schema atualizado para incluir os novos campos opcionais.
     const payload = {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
@@ -41,9 +41,36 @@ exports.handler = async function(event) {
               type: "OBJECT",
               properties: {
                   "portugues": { "type": "STRING" },
-                  "hebraico": { "type": "OBJECT", properties: { "termo": { "type": "STRING" }, "significado": { "type": "STRING" }, "silabico": { "type": "STRING" }, "strong": { "type": "STRING" } }, nullable: true },
-                  "grego": { "type": "OBJECT", properties: { "termo": { "type": "STRING" }, "significado": { "type": "STRING" }, "strong": { "type": "STRING" } }, nullable: true },
-                  "latim": { "type": "OBJECT", properties: { "termo": { "type": "STRING" }, "significado": { "type": "STRING" } }, nullable: true },
+                  "hebraico": { 
+                      "type": "OBJECT", 
+                      properties: { 
+                          "termo": { "type": "STRING" }, 
+                          "significado": { "type": "STRING" }, 
+                          "silabico": { "type": "STRING" }, 
+                          "strong": { "type": "STRING" },
+                          "significado_puro": { "type": "STRING" }
+                      }, 
+                      nullable: true 
+                  },
+                  "grego": { 
+                      "type": "OBJECT", 
+                      properties: { 
+                          "termo": { "type": "STRING" }, 
+                          "significado": { "type": "STRING" }, 
+                          "strong": { "type": "STRING" },
+                          "significado_puro": { "type": "STRING" }
+                      }, 
+                      nullable: true 
+                  },
+                  "latim": { 
+                      "type": "OBJECT", 
+                      properties: { 
+                          "termo": { "type": "STRING" }, 
+                          "significado": { "type": "STRING" },
+                          "significado_puro": { "type": "STRING" }
+                      }, 
+                      nullable: true 
+                  },
                   "comentarios": { "type": "ARRAY", items: { "type": "OBJECT", properties: { "autor": { "type": "STRING" }, "texto": { "type": "STRING" } } } }
               },
               required: ["portugues", "hebraico", "grego", "latim", "comentarios"]
