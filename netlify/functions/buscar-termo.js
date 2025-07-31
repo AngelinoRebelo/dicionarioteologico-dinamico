@@ -24,15 +24,15 @@ exports.handler = async function(event) {
       throw new Error("A chave da API do Gemini não está configurada no servidor.");
     }
 
-    // Prompt atualizado para solicitar comentários ainda mais extensos.
+    // Prompt atualizado para solicitar a referência de cada comentário.
     const prompt = `Para o termo teológico "${termo}", forneça as seguintes informações em formato JSON, seguindo o esquema especificado.
     1.  **portugues**: Uma definição clara e abrangente do termo no contexto teológico cristão.
     2.  **hebraico**: Um objeto contendo o 'termo' original, o 'significado' (conforme a definição de Strong), a representação 'silabico' transliterada, o número de 'strong', e o 'significado_puro' (uma explicação do sentido literal ou da raiz da palavra em hebraico). Se não houver equivalente, retorne null.
     3.  **grego**: Um objeto contendo o 'termo' original, seu 'significado' (conforme Strong), o número de 'strong', e o 'significado_puro' (explicação do sentido da raiz grega). Se não houver equivalente, retorne null.
     4.  **latim**: Um objeto contendo o 'termo' da Vulgata Latina, seu 'significado', e o 'significado_puro' (explicação do sentido da raiz latina). Se não houver equivalente, retorne null.
-    5.  **comentarios**: Um array de pelo menos 4 objetos, cada um com 'autor' e 'texto'. Para cada comentário, forneça um parágrafo substancial e bem desenvolvido, com várias frases, explorando profundamente as implicações, o contexto e as nuances do conceito. Priorize teólogos cristãos de referência (William Barclay, Matthew Henry, João Calvino, etc.). Sempre que o termo tiver uma raiz hebraica relevante, inclua também comentários do Rabino Rashi (perspectiva judaica clássica) e de fontes ou rabinos messiânicos (perspectiva judaica messiânica).`;
+    5.  **comentarios**: Um array de pelo menos 4 objetos, cada um com 'autor', 'texto' (um parágrafo substancial e bem desenvolvido), e 'referencia' (a fonte bibliográfica, ex: 'Comentário de João 3:16'). Priorize teólogos cristãos de referência (William Barclay, Matthew Henry, João Calvino, etc.). Sempre que o termo tiver uma raiz hebraica relevante, inclua também comentários do Rabino Rashi (perspectiva judaica clássica) e de fontes ou rabinos messiânicos (perspectiva judaica messiânica).`;
 
-    // Schema não precisa de alteração, pois a estrutura dos dados é a mesma.
+    // Schema atualizado para incluir o campo 'referencia'.
     const payload = {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
@@ -71,7 +71,18 @@ exports.handler = async function(event) {
                       }, 
                       nullable: true 
                   },
-                  "comentarios": { "type": "ARRAY", items: { "type": "OBJECT", properties: { "autor": { "type": "STRING" }, "texto": { "type": "STRING" } } } }
+                  "comentarios": { 
+                      "type": "ARRAY", 
+                      "items": { 
+                          "type": "OBJECT", 
+                          "properties": { 
+                              "autor": { "type": "STRING" }, 
+                              "texto": { "type": "STRING" },
+                              "referencia": { "type": "STRING" }
+                          },
+                          "required": ["autor", "texto"]
+                      } 
+                  }
               },
               required: ["portugues", "hebraico", "grego", "latim", "comentarios"]
           }
