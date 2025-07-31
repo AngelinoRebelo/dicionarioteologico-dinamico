@@ -17,22 +17,22 @@ exports.handler = async function(event) {
     const { termo } = JSON.parse(event.body);
 
     // Pega a chave da API de uma variável de ambiente segura, configurada no painel do Netlify.
-    // A chave NUNCA fica exposta no código do frontend.
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
       throw new Error("A chave da API do Gemini não está configurada no servidor.");
     }
 
-    // Prompt atualizado para solicitar a referência de cada comentário.
+    // Prompt atualizado para solicitar as referências bíblicas.
     const prompt = `Para o termo teológico "${termo}", forneça as seguintes informações em formato JSON, seguindo o esquema especificado.
     1.  **portugues**: Uma definição clara e abrangente do termo no contexto teológico cristão.
     2.  **hebraico**: Um objeto contendo o 'termo' original, o 'significado' (conforme a definição de Strong), a representação 'silabico' transliterada, o número de 'strong', e o 'significado_puro' (uma explicação do sentido literal ou da raiz da palavra em hebraico). Se não houver equivalente, retorne null.
     3.  **grego**: Um objeto contendo o 'termo' original, seu 'significado' (conforme Strong), o número de 'strong', e o 'significado_puro' (explicação do sentido da raiz grega). Se não houver equivalente, retorne null.
     4.  **latim**: Um objeto contendo o 'termo' da Vulgata Latina, seu 'significado', e o 'significado_puro' (explicação do sentido da raiz latina). Se não houver equivalente, retorne null.
-    5.  **comentarios**: Um array de pelo menos 4 objetos, cada um com 'autor', 'texto' (um parágrafo substancial e bem desenvolvido), e 'referencia' (a fonte bibliográfica, ex: 'Comentário de João 3:16'). Priorize teólogos cristãos de referência (William Barclay, Matthew Henry, João Calvino, etc.). Sempre que o termo tiver uma raiz hebraica relevante, inclua também comentários do Rabino Rashi (perspectiva judaica clássica) e de fontes ou rabinos messiânicos (perspectiva judaica messiânica).`;
+    5.  **comentarios**: Um array de pelo menos 4 objetos, cada um com 'autor', 'texto' (um parágrafo substancial e bem desenvolvido), e 'referencia' (a fonte bibliográfica, ex: 'Comentário de João 3:16'). Priorize teólogos cristãos de referência (William Barclay, Matthew Henry, João Calvino, etc.) e, quando relevante, inclua Rashi e fontes messiânicas.
+    6.  **referencias_biblicas**: Um array de objetos, cada um com 'citacao' (ex: 'João 3:16') e 'texto' (o texto completo do versículo). Inclua vários versículos chave que ilustram o uso e o significado do termo na Bíblia.`;
 
-    // Schema atualizado para incluir o campo 'referencia'.
+    // Schema atualizado para incluir o campo 'referencias_biblicas'.
     const payload = {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
@@ -82,9 +82,20 @@ exports.handler = async function(event) {
                           },
                           "required": ["autor", "texto"]
                       } 
+                  },
+                  "referencias_biblicas": {
+                      "type": "ARRAY",
+                      "items": {
+                          "type": "OBJECT",
+                          "properties": {
+                              "citacao": { "type": "STRING" },
+                              "texto": { "type": "STRING" }
+                          },
+                          "required": ["citacao", "texto"]
+                      }
                   }
               },
-              required: ["portugues", "hebraico", "grego", "latim", "comentarios"]
+              required: ["portugues", "hebraico", "grego", "latim", "comentarios", "referencias_biblicas"]
           }
       }
     };
