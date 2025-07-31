@@ -23,16 +23,16 @@ exports.handler = async function(event) {
       throw new Error("A chave da API do Gemini não está configurada no servidor.");
     }
 
-    // Prompt atualizado para solicitar os comentários de cada versículo.
+    // Prompt otimizado para velocidade, removendo os comentários por versículo.
     const prompt = `Para o termo teológico "${termo}", forneça as seguintes informações em formato JSON, seguindo o esquema especificado.
     1.  **portugues**: Uma definição clara e abrangente do termo no contexto teológico cristão.
     2.  **hebraico**: Um objeto contendo o 'termo' original, o 'significado' (conforme a definição de Strong), a representação 'silabico' transliterada, o número de 'strong', e o 'significado_puro' (uma explicação do sentido literal ou da raiz da palavra em hebraico). Se não houver equivalente, retorne null.
     3.  **grego**: Um objeto contendo o 'termo' original, seu 'significado' (conforme Strong), o número de 'strong', e o 'significado_puro' (explicação do sentido da raiz grega). Se não houver equivalente, retorne null.
     4.  **latim**: Um objeto contendo o 'termo' da Vulgata Latina, seu 'significado', e o 'significado_puro' (explicação do sentido da raiz latina). Se não houver equivalente, retorne null.
     5.  **comentarios**: Um array de pelo menos 4 objetos, cada um com 'autor', 'texto' (um parágrafo substancial sobre o termo em geral), e 'referencia' (a fonte bibliográfica). Priorize teólogos cristãos de referência (William Barclay, Matthew Henry, João Calvino, etc.) e, quando relevante, inclua Rashi e fontes messiânicas.
-    6.  **referencias_biblicas**: Um array de objetos, cada um com 'citacao' (ex: 'João 3:16'), 'texto' (o texto completo do versículo), e um array aninhado chamado 'comentarios_versiculo'. Este array aninhado deve conter objetos com 'autor' e 'texto', fornecendo comentários específicos para aquele versículo, extraídos da mesma lista de comentaristas.`;
+    6.  **referencias_biblicas**: Um array de objetos, cada um com 'citacao' (ex: 'João 3:16') e 'texto' (o texto completo do versículo). Inclua vários versículos chave que ilustram o uso e o significado do termo na Bíblia.`;
 
-    // Schema atualizado para incluir o campo aninhado 'comentarios_versiculo'.
+    // Schema otimizado, removendo o campo 'comentarios_versiculo'.
     const payload = {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
@@ -89,18 +89,7 @@ exports.handler = async function(event) {
                           "type": "OBJECT",
                           "properties": {
                               "citacao": { "type": "STRING" },
-                              "texto": { "type": "STRING" },
-                              "comentarios_versiculo": {
-                                  "type": "ARRAY",
-                                  "items": {
-                                      "type": "OBJECT",
-                                      "properties": {
-                                          "autor": { "type": "STRING" },
-                                          "texto": { "type": "STRING" }
-                                      },
-                                      "required": ["autor", "texto"]
-                                  }
-                              }
+                              "texto": { "type": "STRING" }
                           },
                           "required": ["citacao", "texto"]
                       }
