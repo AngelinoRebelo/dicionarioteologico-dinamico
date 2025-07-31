@@ -105,18 +105,53 @@
                             ${resultado.hebraico?.strong ? `<span class="text-xs bg-purple-200 text-purple-800 font-bold px-2 py-1 rounded-full self-start mt-2">Strong: ${resultado.hebraico.strong}</span>` : ''}
                             <p class="text-2xl font-serif text-purple-700 mt-2">${resultado.hebraico?.termo || 'N/A'}</p>
                             ${resultado.hebraico?.silabico ? `<p class="text-sm text-purple-600 italic">(${resultado.hebraico.silabico})</p>` : ''}
-                            <p class="text-gray-600 mt-2 flex-grow">${resultado.hebraico?.significado || 'Não foi encontrado um equivalente direto.'}</p>
+                            
+                            ${resultado.hebraico?.significado_puro ? `
+                            <div class="mt-3 pt-3 border-t border-gray-200">
+                                <p class="text-sm font-semibold text-gray-700">Sentido da Raiz Hebraica:</p>
+                                <p class="text-gray-600 mt-1">${resultado.hebraico.significado_puro}</p>
+                            </div>
+                            ` : ''}
+
+                            <div class="mt-3 pt-3 border-t border-gray-200 flex-grow">
+                                <p class="text-sm font-semibold text-gray-700">Definição (Concordância de Strong):</p>
+                                <p class="text-gray-600 mt-1">${resultado.hebraico?.significado || 'Não foi encontrado um equivalente direto.'}</p>
+                            </div>
                         </div>
+
                         <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col">
                             <h4 class="text-lg font-semibold text-gray-800">Grego</h4>
                             ${resultado.grego?.strong ? `<span class="text-xs bg-green-200 text-green-800 font-bold px-2 py-1 rounded-full self-start mt-2">Strong: ${resultado.grego.strong}</span>` : ''}
                             <p class="text-2xl font-serif text-green-700 mt-2">${resultado.grego?.termo || 'N/A'}</p>
-                            <p class="text-gray-600 mt-2 flex-grow">${resultado.grego?.significado || 'Não foi encontrado um equivalente direto.'}</p>
+                            
+                            ${resultado.grego?.significado_puro ? `
+                            <div class="mt-3 pt-3 border-t border-gray-200">
+                                <p class="text-sm font-semibold text-gray-700">Sentido da Raiz Grega:</p>
+                                <p class="text-gray-600 mt-1">${resultado.grego.significado_puro}</p>
+                            </div>
+                            ` : ''}
+
+                            <div class="mt-3 pt-3 border-t border-gray-200 flex-grow">
+                                <p class="text-sm font-semibold text-gray-700">Definição (Concordância de Strong):</p>
+                                <p class="text-gray-600 mt-1">${resultado.grego?.significado || 'Não foi encontrado um equivalente direto.'}</p>
+                            </div>
                         </div>
+
                          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col">
                             <h4 class="text-lg font-semibold text-gray-800">Latim</h4>
                             <p class="text-2xl font-serif text-red-700 mt-2">${resultado.latim?.termo || 'N/A'}</p>
-                            <p class="text-gray-600 mt-2 flex-grow">${resultado.latim?.significado || 'Não foi encontrado um equivalente direto.'}</p>
+
+                            ${resultado.latim?.significado_puro ? `
+                            <div class="mt-3 pt-3 border-t border-gray-200">
+                                <p class="text-sm font-semibold text-gray-700">Sentido da Raiz Latina:</p>
+                                <p class="text-gray-600 mt-1">${resultado.latim.significado_puro}</p>
+                            </div>
+                            ` : ''}
+                            
+                            <div class="mt-3 pt-3 border-t border-gray-200 flex-grow">
+                                <p class="text-sm font-semibold text-gray-700">Definição (Vulgata):</p>
+                                <p class="text-gray-600 mt-1">${resultado.latim?.significado || 'Não foi encontrado um equivalente direto.'}</p>
+                            </div>
                         </div>
                     </div>
 
