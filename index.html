@@ -37,13 +37,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        @keyframes fade-in {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-            animation: fade-in 0.5s ease-out forwards;
-        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -177,14 +170,7 @@
                             `).join('')}
                         </div>
                     </div>
-                    ` : `
-                    <div class="mt-6">
-                        <h3 class="text-xl font-semibold border-b-2 border-blue-200 pb-2 mb-4">Comentários sobre o Termo</h3>
-                        <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-300">
-                            <p class="text-gray-600 italic">Nenhum comentário de autor específico foi encontrado para este termo.</p>
-                        </div>
-                    </div>
-                    `}
+                    ` : ''}
 
                     ${resultado.referencias_biblicas && resultado.referencias_biblicas.length > 0 ? `
                     <div class="mt-6">
@@ -198,14 +184,7 @@
                             `).join('')}
                         </div>
                     </div>
-                    ` : `
-                     <div class="mt-6">
-                        <h3 class="text-xl font-semibold border-b-2 border-green-200 pb-2 mb-4">Referências Bíblicas</h3>
-                        <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-300">
-                            <p class="text-gray-600 italic">Nenhuma referência bíblica direta foi encontrada para este termo.</p>
-                        </div>
-                    </div>
-                    `}
+                    ` : ''}
                 </div>
             `;
             resultsContainer.innerHTML = resultHTML;
@@ -228,9 +207,6 @@
 
             showLoading();
             
-            // NOTE: This fetch call points to a Netlify serverless function.
-            // For this preview to work, the backend function must be deployed.
-            // When running locally or in a different environment, this URL might need to be adjusted.
             try {
                 const apiUrl = `/.netlify/functions/buscar-termo`;
                 
@@ -245,9 +221,16 @@
                     throw new Error(errorData.error || `API Error: ${response.status}`);
                 }
 
-                // The backend now returns the parsed JSON directly.
-                const parsedJson = await response.json();
-                renderResult(termoBuscado, parsedJson);
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    const parsedJson = JSON.parse(text);
+                    renderResult(termoBuscado, parsedJson);
+                } else {
+                    const errorMessage = result.error?.message || "A resposta da API não contém dados válidos.";
+                    throw new Error(errorMessage);
+                }
 
             } catch (error) {
                 console.error("Erro ao buscar termo:", error);
@@ -262,6 +245,17 @@
             }
         });
 
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes fade-in {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .animate-fade-in {
+                animation: fade-in 0.5s ease-out forwards;
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>
