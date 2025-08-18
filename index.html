@@ -37,13 +37,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        @keyframes fade-in {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-            animation: fade-in 0.5s ease-out forwards;
-        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -177,14 +170,7 @@
                             `).join('')}
                         </div>
                     </div>
-                    ` : `
-                    <div class="mt-6">
-                        <h3 class="text-xl font-semibold border-b-2 border-blue-200 pb-2 mb-4">Comentários sobre o Termo</h3>
-                        <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-300">
-                            <p class="text-gray-600 italic">Nenhum comentário de autor específico foi encontrado para este termo.</p>
-                        </div>
-                    </div>
-                    `}
+                    ` : ''}
 
                     ${resultado.referencias_biblicas && resultado.referencias_biblicas.length > 0 ? `
                     <div class="mt-6">
@@ -198,14 +184,7 @@
                             `).join('')}
                         </div>
                     </div>
-                    ` : `
-                     <div class="mt-6">
-                        <h3 class="text-xl font-semibold border-b-2 border-green-200 pb-2 mb-4">Referências Bíblicas</h3>
-                        <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-300">
-                            <p class="text-gray-600 italic">Nenhuma referência bíblica direta foi encontrada para este termo.</p>
-                        </div>
-                    </div>
-                    `}
+                    ` : ''}
                 </div>
             `;
             resultsContainer.innerHTML = resultHTML;
@@ -228,79 +207,34 @@
 
             showLoading();
             
-            // NOTE: This fetch call points to a Netlify serverless function.
-            // For this preview to work, the backend function must be deployed.
-            // When running locally or in a different environment, this URL might need to be adjusted.
             try {
-                // This is a placeholder URL. In a real deployment, this would point to your live Netlify function.
-                // For the preview to work here, we will simulate a successful API call after a delay.
-                const isPreview = true; // Simulate preview environment
+                const apiUrl = `/.netlify/functions/buscar-termo`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ termo: termoBuscado })
+                });
 
-                if (isPreview) {
-                    // Simulate a network delay
-                    await new Promise(resolve => setTimeout(resolve, 1500));
-                    
-                    // Mock data that matches the expected structure
-                    const mockData = {
-                        "portugues": `Uma análise simulada para o termo "${termoBuscado}". Este é um exemplo de como os dados apareceriam.`,
-                        "hebraico": {
-                            "termo": "דוגמה",
-                            "strong": "H1234",
-                            "silabico": "dug-ma",
-                            "significado_puro": "Exemplo, padrão",
-                            "significado": "Um padrão, exemplo, ou semelhança; algo a ser imitado."
-                        },
-                        "grego": {
-                            "termo": "παράδειγμα",
-                            "strong": "G5432",
-                            "significado_puro": "Mostrar ao lado",
-                            "significado": "Um exemplo, modelo, ou padrão. Usado tanto para bons quanto para maus exemplos."
-                        },
-                        "latim": {
-                            "termo": "Exemplum",
-                            "significado_puro": "Aquilo que é retirado",
-                            "significado": "Um exemplo, modelo, ou precedente."
-                        },
-                        "comentarios": [
-                            {
-                                "texto": "Este é um comentário simulado para demonstrar a funcionalidade. Em uma busca real, uma citação relevante de um dos teólogos selecionados apareceria aqui.",
-                                "autor": "F. F. Bruce",
-                                "referencia": "Comentário sobre a Epístola aos Gálatas (Simulado)"
-                            }
-                        ],
-                        "referencias_biblicas": [
-                            {
-                                "citacao": "Filipenses 3:17 (Exemplo)",
-                                "texto": "Irmãos, sede meus imitadores e observai os que andam segundo o modelo que tendes em nós."
-                            },
-                            {
-                                "citacao": "1 Pedro 2:21 (Exemplo)",
-                                "texto": "Porquanto para isto mesmo fostes chamados, pois que também Cristo sofreu em vosso lugar, deixando-vos exemplo para seguirdes os seus passos."
-                            }
-                        ]
-                    };
-                    renderResult(termoBuscado, mockData);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `API Error: ${response.status}`);
+                }
 
-                } else {
-                    // This is the real fetch call for a deployed environment
-                    const apiUrl = `/.netlify/functions/buscar-termo`;
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ termo: termoBuscado })
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || `API Error: ${response.status}`);
-                    }
-                    const parsedJson = await response.json();
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    const parsedJson = JSON.parse(text);
                     renderResult(termoBuscado, parsedJson);
+                } else {
+                    const errorMessage = result.error?.message || "A resposta da API não contém dados válidos.";
+                    throw new Error(errorMessage);
                 }
 
             } catch (error) {
                 console.error("Erro ao buscar termo:", error);
-                showError(termoBuscado, "A busca online não está ativa nesta pré-visualização. Mostrando dados de exemplo.");
+                showError(termoBuscado, error.message);
             }
         };
 
@@ -311,6 +245,17 @@
             }
         });
 
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes fade-in {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .animate-fade-in {
+                animation: fade-in 0.5s ease-out forwards;
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>
