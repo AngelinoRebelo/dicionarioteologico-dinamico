@@ -1,5 +1,6 @@
 // Este código é para ser executado no servidor (Netlify Functions).
-const fetch = require('node-fetch');
+// REMOVIDO: const fetch = require('node-fetch'); 
+// O Node.js 18+ já tem o 'fetch' nativo, não precisamos importar nada!
 
 exports.handler = async function(event) {
   
@@ -9,6 +10,11 @@ exports.handler = async function(event) {
     'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json'
   };
+
+  // Verifica se é um pré-voo CORS (OPTIONS) ou POST
+  if (event.httpMethod === 'OPTIONS') {
+      return { statusCode: 200, headers, body: '' };
+  }
 
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers, body: 'Method Not Allowed' };
@@ -34,7 +40,6 @@ exports.handler = async function(event) {
 
     if (!apiKey) {
       console.error("ERRO CRÍTICO: A variável GEMINI_API_KEY não foi encontrada no ambiente.");
-      // Retornamos um erro genérico para o usuário, mas logamos o detalhe
       return { 
           statusCode: 500, 
           headers, 
@@ -117,23 +122,22 @@ exports.handler = async function(event) {
       }
     };
 
-    // --- CORREÇÃO PRINCIPAL AQUI ---
-    // Usamos 'gemini-1.5-flash' que é o modelo estável atual.
+    // Usamos o modelo gemini-1.5-flash
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
+    // Chamada usando o fetch nativo do Node.js
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
-    // Se o Google der erro, capturamos e enviamos para o frontend sem "crashar" (sem dar 502)
     if (!response.ok) {
         const errorText = await response.text();
         console.error(`Erro da API Google (Status ${response.status}):`, errorText);
         
         return {
-            statusCode: response.status, // Retorna o status real (ex: 400, 403), não 502
+            statusCode: response.status,
             headers,
             body: JSON.stringify({ 
                 error: `Erro na comunicação com o Google (Status ${response.status}). Detalhes no log do servidor.` 
