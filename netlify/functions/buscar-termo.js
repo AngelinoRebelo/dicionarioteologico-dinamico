@@ -15,14 +15,31 @@ exports.handler = async function(event) {
   }
 
   try {
-    const { termo } = JSON.parse(event.body);
+    // Tenta ler o corpo da requisição com segurança
+    let body;
+    try {
+        body = JSON.parse(event.body);
+    } catch (e) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: "Corpo da requisição inválido." }) };
+    }
+
+    const { termo } = body;
+
+    if (!termo) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: "Termo não fornecido." }) };
+    }
 
     // Acessa a chave do cofre da Netlify (Variáveis de Ambiente)
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      console.error("ERRO: A variável GEMINI_API_KEY não foi encontrada.");
-      throw new Error("A chave da API não está configurada no servidor.");
+      console.error("ERRO CRÍTICO: A variável GEMINI_API_KEY não foi encontrada no ambiente.");
+      // Retornamos um erro genérico para o usuário, mas logamos o detalhe
+      return { 
+          statusCode: 500, 
+          headers, 
+          body: JSON.stringify({ error: "Erro de configuração no servidor (Chave API ausente)." }) 
+      };
     }
 
     const prompt = `Para o termo teológico "${termo}", forneça as seguintes informações em formato JSON, seguindo o esquema especificado.
@@ -100,7 +117,8 @@ exports.handler = async function(event) {
       }
     };
 
-    // CORREÇÃO IMPORTANTE: Voltamos para o modelo estável gemini-1.5-flash
+    // --- CORREÇÃO PRINCIPAL AQUI ---
+    // Usamos 'gemini-1.5-flash' que é o modelo estável atual.
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(apiUrl, {
@@ -109,14 +127,17 @@ exports.handler = async function(event) {
       body: JSON.stringify(payload)
     });
 
-    // Verificação de erro melhorada para evitar o 502
+    // Se o Google der erro, capturamos e enviamos para o frontend sem "crashar" (sem dar 502)
     if (!response.ok) {
         const errorText = await response.text();
         console.error(`Erro da API Google (Status ${response.status}):`, errorText);
+        
         return {
-            statusCode: response.status,
+            statusCode: response.status, // Retorna o status real (ex: 400, 403), não 502
             headers,
-            body: JSON.stringify({ error: `Erro no Google (${response.status}): ${errorText}` })
+            body: JSON.stringify({ 
+                error: `Erro na comunicação com o Google (Status ${response.status}). Detalhes no log do servidor.` 
+            })
         };
     }
 
@@ -129,11 +150,11 @@ exports.handler = async function(event) {
     };
 
   } catch (error) {
-    console.error("Erro na função de backend:", error);
+    console.error("Erro não tratado na função:", error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: error.message })
+      body: JSON.stringify({ error: `Erro interno do servidor: ${error.message}` })
     };
   }
 };
