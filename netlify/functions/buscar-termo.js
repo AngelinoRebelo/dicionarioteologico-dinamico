@@ -1,6 +1,7 @@
 // Este código é para ser executado no servidor (Netlify Functions).
-// REMOVIDO: const fetch = require('node-fetch'); 
-// O Node.js 18+ já tem o 'fetch' nativo, não precisamos importar nada!
+
+// ATENÇÃO: Não importamos 'node-fetch'. Usamos o nativo do Node.js.
+// Isto previne o erro 502 de "módulo não encontrado".
 
 exports.handler = async function(event) {
   
@@ -11,9 +12,9 @@ exports.handler = async function(event) {
     'Content-Type': 'application/json'
   };
 
-  // Verifica se é um pré-voo CORS (OPTIONS) ou POST
+  // Responde a "preflight requests" (necessário para CORS)
   if (event.httpMethod === 'OPTIONS') {
-      return { statusCode: 200, headers, body: '' };
+    return { statusCode: 200, headers, body: '' };
   }
 
   if (event.httpMethod !== 'POST') {
@@ -122,10 +123,10 @@ exports.handler = async function(event) {
       }
     };
 
-    // Usamos o modelo gemini-1.5-flash
+    // Usando o modelo estável
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-    // Chamada usando o fetch nativo do Node.js
+    // Chamada usando o fetch NATVO (sem require)
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -140,7 +141,7 @@ exports.handler = async function(event) {
             statusCode: response.status,
             headers,
             body: JSON.stringify({ 
-                error: `Erro na comunicação com o Google (Status ${response.status}). Detalhes no log do servidor.` 
+                error: `Erro na comunicação com o Google (Status ${response.status}). Verifique os logs.` 
             })
         };
     }
