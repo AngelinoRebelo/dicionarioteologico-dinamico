@@ -100,6 +100,7 @@ exports.handler = async function(event) {
       }
     };
 
+    // CORREÇÃO IMPORTANTE: Voltamos para o modelo estável gemini-1.5-flash
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(apiUrl, {
@@ -108,10 +109,15 @@ exports.handler = async function(event) {
       body: JSON.stringify(payload)
     });
 
+    // Verificação de erro melhorada para evitar o 502
     if (!response.ok) {
         const errorText = await response.text();
-        console.error("Erro da API Google:", errorText);
-        throw new Error(`Erro na API do Google: ${errorText}`);
+        console.error(`Erro da API Google (Status ${response.status}):`, errorText);
+        return {
+            statusCode: response.status,
+            headers,
+            body: JSON.stringify({ error: `Erro no Google (${response.status}): ${errorText}` })
+        };
     }
 
     const data = await response.json();
