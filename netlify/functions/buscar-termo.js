@@ -1,51 +1,68 @@
-// Este código é para ser executado no servidor (Netlify Functions).
+// Este código usa o módulo nativo HTTPS do Node.js.
+// Funciona em qualquer versão e não precisa de 'npm install'.
+const https = require('https');
 
-// ATENÇÃO: Não importamos 'node-fetch'. Usamos o nativo do Node.js.
-// Isto previne o erro 502 de "módulo não encontrado".
+// Função auxiliar para fazer o pedido HTTPS manualmente (sem 'fetch')
+function fazerPedidoGoogle(url, payload) {
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(url);
+    const data = JSON.stringify(payload);
+
+    const options = {
+      hostname: urlObj.hostname,
+      path: urlObj.pathname + urlObj.search,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(data)
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      let body = '';
+      res.on('data', (chunk) => (body += chunk));
+      res.on('end', () => {
+        resolve({
+          statusCode: res.statusCode,
+          body: body
+        });
+      });
+    });
+
+    req.on('error', (e) => reject(e));
+    req.write(data);
+    req.end();
+  });
+}
 
 exports.handler = async function(event) {
-  
-  // Configura headers para permitir JSON e evitar erros de CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json'
   };
 
-  // Responde a "preflight requests" (necessário para CORS)
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
-  }
-
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers, body: 'Method Not Allowed' };
   }
 
   try {
-    // Tenta ler o corpo da requisição com segurança
     let body;
     try {
-        body = JSON.parse(event.body);
+      body = JSON.parse(event.body);
     } catch (e) {
-        return { statusCode: 400, headers, body: JSON.stringify({ error: "Corpo da requisição inválido." }) };
+      return { statusCode: 400, headers, body: JSON.stringify({ error: "JSON inválido." }) };
     }
 
     const { termo } = body;
-
     if (!termo) {
-        return { statusCode: 400, headers, body: JSON.stringify({ error: "Termo não fornecido." }) };
+      return { statusCode: 400, headers, body: JSON.stringify({ error: "Termo não fornecido." }) };
     }
 
-    // Acessa a chave do cofre da Netlify (Variáveis de Ambiente)
     const apiKey = process.env.GEMINI_API_KEY;
-
     if (!apiKey) {
-      console.error("ERRO CRÍTICO: A variável GEMINI_API_KEY não foi encontrada no ambiente.");
-      return { 
-          statusCode: 500, 
-          headers, 
-          body: JSON.stringify({ error: "Erro de configuração no servidor (Chave API ausente)." }) 
-      };
+      console.error("ERRO CRÍTICO: GEMINI_API_KEY ausente.");
+      return { statusCode: 500, headers, body: JSON.stringify({ error: "Erro de configuração no servidor." }) };
     }
 
     const prompt = `Para o termo teológico "${termo}", forneça as seguintes informações em formato JSON, seguindo o esquema especificado.
@@ -123,43 +140,35 @@ exports.handler = async function(event) {
       }
     };
 
-    // Usando o modelo estável
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-    // Chamada usando o fetch NATVO (sem require)
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    // CHAMADA SEGURA SEM DEPENDÊNCIAS
+    const response = await fazerPedidoGoogle(apiUrl, payload);
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Erro da API Google (Status ${response.status}):`, errorText);
-        
-        return {
-            statusCode: response.status,
-            headers,
-            body: JSON.stringify({ 
-                error: `Erro na comunicação com o Google (Status ${response.status}). Verifique os logs.` 
-            })
-        };
+    if (response.statusCode !== 200) {
+      console.error(`Erro Google (${response.statusCode}):`, response.body);
+      return {
+        statusCode: response.statusCode,
+        headers,
+        body: JSON.stringify({ error: `Erro no Google: ${response.body}` })
+      };
     }
 
-    const data = await response.json();
+    // Parse do corpo da resposta
+    const responseBody = JSON.parse(response.body);
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(data)
+      body: JSON.stringify(responseBody)
     };
 
   } catch (error) {
-    console.error("Erro não tratado na função:", error);
+    console.error("Erro Fatal:", error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: `Erro interno do servidor: ${error.message}` })
+      body: JSON.stringify({ error: `Erro interno: ${error.message}` })
     };
   }
 };
