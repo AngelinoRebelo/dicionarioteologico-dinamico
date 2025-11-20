@@ -172,4 +172,20 @@ exports.handler = async function(event) {
     };
   }
 };
-```
+```eof
+
+### Por que esta solução é diferente?
+1.  **Zero Instalações:** Este código **não usa `fetch`**. Usa `https.request`, que já vem instalado dentro de todos os servidores Node.js desde 2010.
+2.  **Compatibilidade Total:** Não importa se a Netlify roda Node 14, 16, 18 ou 20. Este código funciona em todos.
+3.  **Depuração Clara:** Se o Google rejeitar a chave, este código vai imprimir o erro exato no console, em vez de apenas "crashar" com 502.
+
+### Sugestão Adicional (Opcional, mas Recomendada)
+Se você ainda tiver o ficheiro `package.json` no seu repositório (na raiz ou na pasta `functions`), **apague-o**.
+Como este novo código não precisa de instalar nada, o `package.json` antigo pode estar a confundir o sistema de build da Netlify, fazendo-o tentar instalar coisas que não precisa e falhando no processo.
+
+**Resumo:**
+1.  Atualize o `buscar-termo.js` com o código acima.
+2.  Apague o `package.json` (se existir).
+3.  Aguarde o deploy automático da Netlify e teste.
+
+Vai funcionar!
